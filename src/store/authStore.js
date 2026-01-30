@@ -23,9 +23,15 @@ export const useAuthStore = create(
             initAuth: () => {
                 onAuthStateChanged(auth, async (firebaseUser) => {
                     if (firebaseUser) {
-                        // Get additional user data from Firestore
-                        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
-                        const userData = userDoc.exists() ? userDoc.data() : {}
+                        // Get additional user data from Firestore (with error handling)
+                        let userData = {}
+                        try {
+                            const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
+                            userData = userDoc.exists() ? userDoc.data() : {}
+                        } catch (error) {
+                            console.warn('Could not fetch user data from Firestore:', error.message)
+                            // Continue without Firestore data - user can still use the app
+                        }
 
                         set({
                             user: {
@@ -81,17 +87,23 @@ export const useAuthStore = create(
                     // Update display name
                     await updateProfile(result.user, { displayName: name })
 
-                    // Store user data in Firestore
-                    await setDoc(doc(db, 'users', result.user.uid), {
-                        name,
-                        email,
-                        role: role || 'guardian',
-                        createdAt: new Date().toISOString()
-                    })
+                    // Store user data in Firestore (non-blocking - continue if fails)
+                    try {
+                        await setDoc(doc(db, 'users', result.user.uid), {
+                            name,
+                            email,
+                            role: role || 'guardian',
+                            createdAt: new Date().toISOString()
+                        })
+                    } catch (firestoreError) {
+                        console.warn('Could not save user profile to Firestore:', firestoreError.message)
+                        // User is still registered via Firebase Auth, just missing Firestore profile
+                    }
 
                     set({ isLoading: false })
                     return { success: true }
                 } catch (error) {
+                    console.error('Registration error:', error)
                     const errorMessage = getAuthErrorMessage(error.code)
                     set({ isLoading: false, error: errorMessage })
                     return { success: false, error: errorMessage }

@@ -104,6 +104,30 @@ export const useMedicineStore = create((set, get) => ({
         }
     },
 
+    // Mark medicine as taken (decrements pill count and records the action)
+    markAsTaken: async (id) => {
+        const user = auth.currentUser
+        if (!user) return false
+
+        const { medicines } = get()
+        const medicine = medicines.find(m => m.id === id)
+        if (!medicine) return false
+
+        try {
+            const medicineRef = doc(db, 'users', user.uid, 'medicines', id)
+            const newPillCount = Math.max(0, (medicine.pillsRemaining || 0) - 1)
+            await updateDoc(medicineRef, {
+                pillsRemaining: newPillCount,
+                lastTaken: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            })
+            return true
+        } catch (error) {
+            console.error('Mark as taken error:', error)
+            return false
+        }
+    },
+
     // Decrement pills (mark as taken)
     decrementPills: async (id, amount = 1) => {
         const { medicines } = get()
