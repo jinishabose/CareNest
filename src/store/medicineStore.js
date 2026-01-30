@@ -8,7 +8,10 @@ import {
     onSnapshot,
     query,
     orderBy,
-    serverTimestamp
+    serverTimestamp,
+    getDocs,
+    where,
+    Timestamp
 } from 'firebase/firestore'
 import { db, auth } from '../lib/firebase'
 
@@ -104,7 +107,7 @@ export const useMedicineStore = create((set, get) => ({
         }
     },
 
-    // Mark medicine as taken (decrements pill count and records the action)
+    // Mark medicine as taken (decrements pill count and records the action in history)
     markAsTaken: async (id) => {
         const user = auth.currentUser
         if (!user) return false
@@ -116,11 +119,25 @@ export const useMedicineStore = create((set, get) => ({
         try {
             const medicineRef = doc(db, 'users', user.uid, 'medicines', id)
             const newPillCount = Math.max(0, (medicine.pillsRemaining || 0) - 1)
+
+            // Update medicine document
             await updateDoc(medicineRef, {
                 pillsRemaining: newPillCount,
                 lastTaken: serverTimestamp(),
                 updatedAt: serverTimestamp()
             })
+
+            // Record in medicine history for tracking
+            const historyRef = collection(db, 'users', user.uid, 'medicineHistory')
+            await addDoc(historyRef, {
+                medicineId: id,
+                medicineName: medicine.name,
+                dosage: medicine.dosage,
+                timeSlot: medicine.time,
+                takenAt: serverTimestamp(),
+                pillsRemainingAfter: newPillCount
+            })
+
             return true
         } catch (error) {
             console.error('Mark as taken error:', error)
@@ -163,5 +180,56 @@ export const useMedicineStore = create((set, get) => ({
     getMedicinesByTime: (time) => {
         const { medicines } = get()
         return medicines.filter(m => m.time === time)
+    },
+
+    // Get weekly medicine history from Firestore
+    getWeeklyHistory: async () => {
+        const user = auth.currentUser
+        if (!user) return []
+
+        try {
+            const oneWeekAgo = new Date()
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+            const weekAgoTimestamp = Timestamp.fromDate(oneWeekAgo)
+
+            const historyRef = collection(db, 'users', user.uid, 'medicineHistory')
+            const q = query(
+                historyRef,
+                where('takenAt', '>=', weekAgoTimestamp),
+                orderBy('takenAt', 'desc')
+            )
+
+            const snapshot = await getDocs(q)
+            return snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                takenAt: doc.data().takenAt?.toDate?.() || doc.data().takenAt
+            }))
+        } catch (error) {
+            console.error('Get weekly history error:', error)
+            return []
+        }
+    },
+
+    // Get patient history events from Firestore
+    getPatientHistory: async () => {
+        const user = auth.currentUser
+        if (!user) return []
+
+        try {
+            const historyRef = collection(db, 'users', user.uid, 'patientHistory')
+            const q = query(historyRef, orderBy('createdAt', 'desc'))
+
+            const snapshot = await getDocs(q)
+            return snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                date: doc.data().date?.toDate?.() || doc.data().date,
+                createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt
+            }))
+        } catch (error) {
+            console.error('Get patient history error:', error)
+            return []
+        }
     }
 }))

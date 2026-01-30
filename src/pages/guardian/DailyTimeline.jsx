@@ -5,143 +5,143 @@ import { useMedicineStore } from '../../store/medicineStore'
 import { format } from 'date-fns'
 
 const timeSlots = [
-    { id: 'morning', label: 'Morning', icon: Sun, time: '8:00 AM', color: '#FFF9C4', gradient: 'linear-gradient(135deg, #FFF9C4 0%, #FFEB3B 100%)' },
-    { id: 'afternoon', label: 'Afternoon', icon: Sunset, time: '2:00 PM', color: '#FFE0B2', gradient: 'linear-gradient(135deg, #FFE0B2 0%, #FF9800 100%)' },
-    { id: 'evening', label: 'Evening', icon: Moon, time: '8:00 PM', color: '#C8E6C9', gradient: 'linear-gradient(135deg, #C8E6C9 0%, #4CAF50 100%)' }
+  { id: 'morning', label: 'Morning', icon: Sun, time: '8:00 AM', color: '#FFF9C4', gradient: 'linear-gradient(135deg, #FFF9C4 0%, #FFEB3B 100%)' },
+  { id: 'afternoon', label: 'Afternoon', icon: Sunset, time: '2:00 PM', color: '#FFE0B2', gradient: 'linear-gradient(135deg, #FFE0B2 0%, #FF9800 100%)' },
+  { id: 'evening', label: 'Evening', icon: Moon, time: '8:00 PM', color: '#C8E6C9', gradient: 'linear-gradient(135deg, #C8E6C9 0%, #4CAF50 100%)' }
 ]
 
 // Demo medicines for display
 const demoMedicines = [
-    { id: 1, name: 'Metformin', dosage: '500mg', time: 'morning', taken: false, pillsRemaining: 24 },
-    { id: 2, name: 'Lisinopril', dosage: '10mg', time: 'morning', taken: true, pillsRemaining: 30 },
-    { id: 3, name: 'Vitamin D3', dosage: '1000 IU', time: 'afternoon', taken: false, pillsRemaining: 8 },
-    { id: 4, name: 'Aspirin', dosage: '81mg', time: 'evening', taken: false, pillsRemaining: 45 },
-    { id: 5, name: 'Omega-3', dosage: '1000mg', time: 'evening', taken: false, pillsRemaining: 3 }
+  { id: 1, name: 'Metformin', dosage: '500mg', time: 'morning', taken: false, pillsRemaining: 24 },
+  { id: 2, name: 'Lisinopril', dosage: '10mg', time: 'morning', taken: true, pillsRemaining: 30 },
+  { id: 3, name: 'Vitamin D3', dosage: '1000 IU', time: 'afternoon', taken: false, pillsRemaining: 8 },
+  { id: 4, name: 'Aspirin', dosage: '81mg', time: 'evening', taken: false, pillsRemaining: 45 },
+  { id: 5, name: 'Omega-3', dosage: '1000mg', time: 'evening', taken: false, pillsRemaining: 3 }
 ]
 
 export default function DailyTimeline() {
-    const { medicines, markAsTaken } = useMedicineStore()
-    const [takenMeds, setTakenMeds] = useState({})
-    const [cursorY, setCursorY] = useState(0)
-    const timelineRef = useRef(null)
+  const { medicines, markAsTaken } = useMedicineStore()
+  const [takenMeds, setTakenMeds] = useState({})
+  const [cursorY, setCursorY] = useState(0)
+  const timelineRef = useRef(null)
 
-    const displayMedicines = medicines.length > 0 ? medicines : demoMedicines
+  const displayMedicines = medicines.length > 0 ? medicines : demoMedicines
 
-    const handleTake = (medId) => {
-        setTakenMeds(prev => ({ ...prev, [medId]: true }))
-        if (medicines.length > 0) {
-            markAsTaken(medId)
-        }
+  const handleTake = (medId) => {
+    setTakenMeds(prev => ({ ...prev, [medId]: true }))
+    if (medicines.length > 0) {
+      markAsTaken(medId)
     }
+  }
 
-    const getMedicinesForSlot = (slotId) => {
-        return displayMedicines.filter(med => med.time === slotId)
+  const getMedicinesForSlot = (slotId) => {
+    return displayMedicines.filter(med => med.time === slotId)
+  }
+
+  const handleMouseMove = (e) => {
+    if (timelineRef.current) {
+      const rect = timelineRef.current.getBoundingClientRect()
+      setCursorY((e.clientY - rect.top) / rect.height)
     }
+  }
 
-    const handleMouseMove = (e) => {
-        if (timelineRef.current) {
-            const rect = timelineRef.current.getBoundingClientRect()
-            setCursorY((e.clientY - rect.top) / rect.height)
-        }
-    }
+  const today = format(new Date(), 'EEEE, MMMM d')
 
-    const today = format(new Date(), 'EEEE, MMMM d')
+  return (
+    <div className="daily-timeline" ref={timelineRef} onMouseMove={handleMouseMove}>
+      {/* Header */}
+      <div className="timeline-header">
+        <div>
+          <h1>Daily Timeline</h1>
+          <p className="timeline-date">{today}</p>
+        </div>
+        <div className="timeline-stats">
+          <div className="stat-item">
+            <span className="stat-value">
+              {displayMedicines.filter(m => m.taken || takenMeds[m.id]).length}
+            </span>
+            <span className="stat-label">Taken</span>
+          </div>
+          <div className="stat-divider" />
+          <div className="stat-item">
+            <span className="stat-value">{displayMedicines.length}</span>
+            <span className="stat-label">Total</span>
+          </div>
+        </div>
+      </div>
 
-    return (
-        <div className="daily-timeline" ref={timelineRef} onMouseMove={handleMouseMove}>
-            {/* Header */}
-            <div className="timeline-header">
-                <div>
-                    <h1>Daily Timeline</h1>
-                    <p className="timeline-date">{today}</p>
-                </div>
-                <div className="timeline-stats">
-                    <div className="stat-item">
-                        <span className="stat-value">
-                            {displayMedicines.filter(m => m.taken || takenMeds[m.id]).length}
-                        </span>
-                        <span className="stat-label">Taken</span>
-                    </div>
-                    <div className="stat-divider" />
-                    <div className="stat-item">
-                        <span className="stat-value">{displayMedicines.length}</span>
-                        <span className="stat-label">Total</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Timeline with Path Reveal */}
-            <div className="timeline-container">
-                {/* Glowing Path */}
-                <div
-                    className="timeline-path"
-                    style={{
-                        background: `linear-gradient(to bottom, 
+      {/* Timeline with Path Reveal */}
+      <div className="timeline-container">
+        {/* Glowing Path */}
+        <div
+          className="timeline-path"
+          style={{
+            background: `linear-gradient(to bottom, 
               var(--forest-green) 0%, 
               var(--forest-green) ${cursorY * 100}%, 
               rgba(27, 94, 32, 0.15) ${cursorY * 100}%, 
               rgba(27, 94, 32, 0.15) 100%)`
-                    }}
-                />
-                <div
-                    className="timeline-glow"
-                    style={{ top: `${cursorY * 100}%` }}
-                />
+          }}
+        />
+        <div
+          className="timeline-glow"
+          style={{ top: `${cursorY * 100}%` }}
+        />
 
-                {/* Time Slots */}
-                {timeSlots.map((slot, index) => {
-                    const slotMedicines = getMedicinesForSlot(slot.id)
-                    const allTaken = slotMedicines.every(m => m.taken || takenMeds[m.id])
+        {/* Time Slots */}
+        {timeSlots.map((slot, index) => {
+          const slotMedicines = getMedicinesForSlot(slot.id)
+          const allTaken = slotMedicines.every(m => m.taken || takenMeds[m.id])
 
-                    return (
-                        <motion.div
-                            key={slot.id}
-                            className="timeline-slot"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                        >
-                            {/* Slot Marker */}
-                            <div className={`slot-marker ${allTaken ? 'completed' : ''}`}>
-                                {allTaken ? <Check size={16} /> : <slot.icon size={16} />}
-                            </div>
+          return (
+            <motion.div
+              key={slot.id}
+              className="timeline-slot"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              {/* Slot Marker */}
+              <div className={`slot-marker ${allTaken ? 'completed' : ''}`}>
+                {allTaken ? <Check size={16} /> : <slot.icon size={16} />}
+              </div>
 
-                            {/* Slot Content */}
-                            <div className="slot-content">
-                                <div className="slot-header" style={{ background: slot.gradient }}>
-                                    <div className="slot-info">
-                                        <h3>{slot.label}</h3>
-                                        <span className="slot-time">
-                                            <Clock size={14} />
-                                            {slot.time}
-                                        </span>
-                                    </div>
-                                    <div className="slot-count">
-                                        {slotMedicines.filter(m => m.taken || takenMeds[m.id]).length}/{slotMedicines.length}
-                                    </div>
-                                </div>
+              {/* Slot Content */}
+              <div className="slot-content">
+                <div className="slot-header" style={{ background: slot.gradient }}>
+                  <div className="slot-info">
+                    <h3>{slot.label}</h3>
+                    <span className="slot-time">
+                      <Clock size={14} />
+                      {slot.time}
+                    </span>
+                  </div>
+                  <div className="slot-count">
+                    {slotMedicines.filter(m => m.taken || takenMeds[m.id]).length}/{slotMedicines.length}
+                  </div>
+                </div>
 
-                                {/* Medicine Cards */}
-                                <div className="medicine-list">
-                                    {slotMedicines.map(medicine => (
-                                        <MedicineTimelineCard
-                                            key={medicine.id}
-                                            medicine={medicine}
-                                            taken={medicine.taken || takenMeds[medicine.id]}
-                                            onTake={() => handleTake(medicine.id)}
-                                        />
-                                    ))}
-                                    {slotMedicines.length === 0 && (
-                                        <div className="empty-slot">No medications scheduled</div>
-                                    )}
-                                </div>
-                            </div>
-                        </motion.div>
-                    )
-                })}
-            </div>
+                {/* Medicine Cards */}
+                <div className="medicine-list">
+                  {slotMedicines.map(medicine => (
+                    <MedicineTimelineCard
+                      key={medicine.id}
+                      medicine={medicine}
+                      taken={medicine.taken || takenMeds[medicine.id]}
+                      onTake={() => handleTake(medicine.id)}
+                    />
+                  ))}
+                  {slotMedicines.length === 0 && (
+                    <div className="empty-slot">No medications scheduled</div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )
+        })}
+      </div>
 
-            <style>{`
+      <style>{`
         .daily-timeline {
           padding-bottom: var(--space-8);
         }
@@ -302,50 +302,50 @@ export default function DailyTimeline() {
           padding: var(--space-4);
         }
       `}</style>
-        </div>
-    )
+    </div>
+  )
 }
 
 function MedicineTimelineCard({ medicine, taken, onTake }) {
-    const isLowStock = medicine.pillsRemaining <= 5
+  const isLowStock = medicine.pillsRemaining <= 5
 
-    return (
-        <motion.div
-            className={`medicine-timeline-card ${taken ? 'taken' : ''}`}
-            whileHover={{ scale: 1.01, x: 4 }}
-            transition={{ type: 'spring', stiffness: 400 }}
-        >
-            <div className="medicine-info">
-                <div className="medicine-name">{medicine.name}</div>
-                <div className="medicine-dosage">{medicine.dosage}</div>
-                {isLowStock && (
-                    <div className="low-stock-alert">
-                        <AlertCircle size={12} />
-                        Only {medicine.pillsRemaining} left
-                    </div>
-                )}
-            </div>
+  return (
+    <motion.div
+      className={`medicine-timeline-card ${taken ? 'taken' : ''}`}
+      whileHover={{ scale: 1.01, x: 4 }}
+      transition={{ type: 'spring', stiffness: 400 }}
+    >
+      <div className="medicine-info">
+        <div className="medicine-name">{medicine.name}</div>
+        <div className="medicine-dosage">{medicine.dosage}</div>
+        {isLowStock && (
+          <div className="low-stock-alert">
+            <AlertCircle size={12} />
+            Only {medicine.pillsRemaining} left
+          </div>
+        )}
+      </div>
 
-            <div className="medicine-actions">
-                {taken ? (
-                    <div className="taken-badge">
-                        <Check size={16} />
-                        Taken
-                    </div>
-                ) : (
-                    <motion.button
-                        className="btn btn-primary btn-sm"
-                        onClick={onTake}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        Take Now
-                        <ChevronRight size={16} />
-                    </motion.button>
-                )}
-            </div>
+      <div className="medicine-actions">
+        {taken ? (
+          <div className="taken-badge">
+            <Check size={16} />
+            Taken
+          </div>
+        ) : (
+          <motion.button
+            className="btn btn-primary btn-sm"
+            onClick={onTake}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Take Now
+            <ChevronRight size={16} />
+          </motion.button>
+        )}
+      </div>
 
-            <style>{`
+      <style>{`
         .medicine-timeline-card {
           display: flex;
           justify-content: space-between;
@@ -396,6 +396,6 @@ function MedicineTimelineCard({ medicine, taken, onTake }) {
           font-weight: 500;
         }
       `}</style>
-        </motion.div>
-    )
+    </motion.div>
+  )
 }
